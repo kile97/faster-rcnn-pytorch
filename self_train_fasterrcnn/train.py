@@ -25,7 +25,9 @@ def get_object_detection_model(num_classes, pretrained, pretrained_backbone):
         pretrained_backbone = False
     # 获取resnet50_backbone, 可以选自torchvision的resnet50预训练模型或者faster rcnn预训练模型
     backbone = resnet50(pretrained=pretrained_backbone, progress=True, norm_layer=FrozenBatchNorm2d)
+    # 用_resnet_fpn_extractor获取Faster的骨干网络
     backbone = _resnet_fpn_extractor(backbone, trainable_backbone_layers)
+    # 配置anchor_sizes 这里选用的是我在之前的yolo v3中kmeans聚类的一些数据，这里会生成len(anchor_sizes) * len(aspect_ratios)个anchor box
     anchor_sizes = ((25,), (35,), (50,), (90,), (120,))
     # anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
     aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
