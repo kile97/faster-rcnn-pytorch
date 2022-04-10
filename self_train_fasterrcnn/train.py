@@ -25,13 +25,15 @@ def get_object_detection_model(num_classes, pretrained, pretrained_backbone):
         pretrained_backbone = False
     # 获取resnet50_backbone, 可以选自torchvision的resnet50预训练模型或者faster rcnn预训练模型
     backbone = resnet50(pretrained=pretrained_backbone, progress=True, norm_layer=FrozenBatchNorm2d)
-    # 用_resnet_fpn_extractor获取Faster的骨干网络
+    # 用_resnet_fpn_extractor获取Faster的骨干网络，并且获得backbone需要保存的特征层为backbone的{'layer1': '0', 'layer2': '1', 'layer3': '2', 'layer4': '3'}
     backbone = _resnet_fpn_extractor(backbone, trainable_backbone_layers)
     # 配置anchor_sizes 这里选用的是我在之前的yolo v3中kmeans聚类的一些数据，这里会生成len(anchor_sizes) * len(aspect_ratios)个anchor box
-    anchor_sizes = ((25,), (35,), (50,), (90,), (120,))
+    anchor_sizes = ((25,35,50,90,120))
     # anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-    aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+    aspect_ratios = ((0.5, 1.0, 2.0))
+    # 定义rpn的anchor box生成类
     rpn_anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
+    # 定义Fasterrcnn 模型
     model = FasterRCNN(backbone, num_classes, rpn_anchor_generator=rpn_anchor_generator)
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls["fasterrcnn_resnet50_fpn_coco"], progress=True)
@@ -39,7 +41,8 @@ def get_object_detection_model(num_classes, pretrained, pretrained_backbone):
         overwrite_eps(model, 0.0)
     return model
 
-root = r'/data/kile/other/yolov3/data_set_kile/data_txt/enhance_train_train.txt'
+
+root = r'./1.txt'
 
 # 设置训练设备
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -52,8 +55,8 @@ dataset_ = MyDataSet(root)
 # split the dataset in train and test set
 # 我的数据集一共有492张图，差不多训练验证4:1
 indices = torch.randperm(len(dataset_)).tolist()
-dataset = Subset(dataset_, indices[:-110])
-dataset_test = Subset(dataset_, indices[-110:])
+dataset = Subset(dataset_, indices[:5])
+dataset_test = Subset(dataset_, indices[5:])
 
 # define training and validation data loaders
 # 在jupyter notebook里训练模型时num_workers参数只能为0，不然会报错，这里就把它注释掉了
@@ -68,9 +71,8 @@ data_loader_test = torch.utils.data.DataLoader(
 # # get the model using our helper function
 # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False, progress=True, num_classes=num_classes,
 #                                                              pretrained_backbone=True)  # 或get_object_detection_model(num_classes)
-model = get_object_detection_model(3,False,True)
+model = get_object_detection_model(3, False, True)
 # model = FasterRCNN()
-
 
 
 # move model to the right device
@@ -91,10 +93,9 @@ lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T
 num_epochs = 31
 
 for epoch in range(num_epochs):
-    #train for one epoch, printing every 10 iterations
-    #engine.py的train_one_epoch函数将images和targets都.to(device)了
+    # train for one epoch, printing every 10 iterations
+    # engine.py的train_one_epoch函数将images和targets都.to(device)了
     train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=1)
-
     # update the learning rate
     lr_scheduler.step()
 
@@ -104,7 +105,6 @@ for epoch in range(num_epochs):
     print('')
     print('==================================================')
     print('')
-    torch.save(model, f"./temp/temp_{epoch}_{time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))}.pth")
+    torch.save(model, f"./temp/temp_{epoch}_{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}.pth")
 
 print("That's it!")
-

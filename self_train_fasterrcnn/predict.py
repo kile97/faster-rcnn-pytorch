@@ -52,9 +52,9 @@ def drawImage(image, labels_, boxes, color):
 
 
 
-model = torch.load(r"./temp/temp_30_2022-04-04.pth").cuda().eval()
+model = torch.load(r"G:\python\2022\04\faster-rcnn-pytorch\self_train_fasterrcnn\temp.pth").cuda().eval()
 print(model)
-root = r"/data/kile/other/yolov3/data_set_kile/data_txt/test.txt"
+root = r'./1.txt'
 image_save_path = r"./result/01"
 if not os.path.exists(image_save_path):
     os.makedirs(image_save_path)
